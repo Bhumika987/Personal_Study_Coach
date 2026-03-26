@@ -67,17 +67,6 @@ User → FastAPI → Retriever → FAISS Vector DB → LLM (Groq) → Response
   * Answer evaluation
 
 ---
-
-### ✂️ Chunking Strategy
-
-* **Chunk size = 1000**
-  Balances context richness and retrieval accuracy
-
-* **Chunk overlap = 200?**
-  Prevents loss of context between chunks
-
----
-
 ### ⚙️ Features
 
 ##### ✅ 1. Question Answering
