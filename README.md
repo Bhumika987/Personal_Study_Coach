@@ -141,7 +141,4 @@ Includes:
 ---
 #### 👩‍💻 Author
 
-**Bhumika Sahu**
-Project is still in progress...
-
----
+**Bhumika Sahu**: Project is still in progress...
