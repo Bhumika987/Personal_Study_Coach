@@ -68,19 +68,13 @@ User → FastAPI → Retriever → FAISS Vector DB → LLM (Groq) → Response
 
 ---
 
-### ✂️ Chunking Strategy (Important)
+### ✂️ Chunking Strategy
 
-* **Why chunking?**
-  Large documents cannot be processed directly by LLMs
-
-* **Why 1000 size?**
+* **Chunk size = 1000**
   Balances context richness and retrieval accuracy
 
-* **Why 200 overlap?**
+* **Chunk overlap = 200?**
   Prevents loss of context between chunks
-
-* **Benefit:**
-  Improves answer quality and continuity
 
 ---
 
