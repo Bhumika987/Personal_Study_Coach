@@ -119,24 +119,16 @@ Includes:
      * Cleaning notebook outputs
      * Rewriting git history
 
-2. **Jupyter Notebook Issue**
-
-   * API key remained in hidden outputs
-   * Fixed using:
-
-     * Restart & Clear Output
-     * `nbstripout`
-
-3. **Retrieval Accuracy**
+2. **Retrieval Accuracy**
 
    * Some queries returned less relevant chunks
    * Due to limited `k` and embedding constraints
 
-4. **No Memory Handling**
+3. **No Memory Handling**
 
    * System doesn’t retain conversation context
   
-5. **Swagger UI Bug**
+4. **Swagger UI Bug**
    * Multiple file upload not working properly, only working for single upload.
 ---
 #### 👩‍💻 Author
