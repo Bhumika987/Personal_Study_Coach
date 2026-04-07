@@ -1,29 +1,42 @@
-# 📚 Personal Study Coach (RAG-based AI Assistant)
-#### 🚀 Overview
-This project is a **Retrieval-Augmented Generation (RAG) based Study Assistant** that helps users learn from their study material.
-It allows users to:
-* 📖 Upload study material (PDF/TXT)
-* ❓ Ask questions and get contextual answers
-* 🧠 Generate quiz questions
-* ✅ Evaluate answers with feedback
-* 💬 Interact in a simple study flow (explain → quiz → evaluate)
+## 📘 Personal Study Coach API – RAG-Based Study Assistant
+
+#### 🚀 Project Overview
+
+The **Personal Study Coach API** is a FastAPI-based backend that enables users to upload study materials and interact with them using AI.
+
+It supports:
+- 📂 PDF upload and processing
+- 💬 Context-aware question answering
+- 🧠 Session-based conversation memory
+- 📝 Quiz generation
+- 📊 Answer evaluation with feedback
+
+The system uses **Retrieval-Augmented Generation (RAG)** to ensure responses are strictly based on uploaded documents.
 
 ---
 
-### 🏗️ Architecture
+#### 🏗️ Architecture
 
-```text
-User → FastAPI → Retriever → FAISS Vector DB → LLM (Groq) → Response
-```
+```mermaid
+flowchart TD
+    A[Upload PDF] --> B[Document Loader]
+    B --> C[Chunking]
+    C --> D[Embeddings]
+    D --> E[FAISS Vector DB]
 
-#### Flow Explanation:
+    E --> F[Retriever (MMR)]
+    F --> G[LLM (Llama 3.1 - Groq)]
+    G --> H[Answer]
 
-1. User uploads or queries study material
-2. Documents are chunked into smaller parts
-3. Chunks are converted into embeddings
-4. Stored in FAISS vector database
-5. Relevant chunks retrieved using MMR
-6. LLM generates answer using retrieved context
+    subgraph Session
+        I[Conversation History]
+        J[Quiz Store]
+        K[Quiz History]
+    end
+
+    I --> F
+    G --> J
+    G --> K
 
 ---
 
@@ -65,7 +78,7 @@ User → FastAPI → Retriever → FAISS Vector DB → LLM (Groq) → Response
   * Answer generation
   * Quiz creation
   * Answer evaluation
-
+```
 ---
 ### ⚙️ Features
 
