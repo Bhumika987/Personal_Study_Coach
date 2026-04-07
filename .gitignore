@@ -1,5 +1,7 @@
 # Python-generated files
 __pycache__/
+faiss_index/
+team_uploads/
 *.py[oc]
 build/
 dist/
