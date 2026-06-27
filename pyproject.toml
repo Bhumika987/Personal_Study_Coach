@@ -1,19 +1,17 @@
 [project]
-name = "main-mini"
-version = "0.1.0"
-description = "Add your description here"
+name = "personal-study-coach"
+version = "2.0.0"
+description = "RAG-based study assistant API"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "chromadb>=1.5.5",
     "faiss-cpu>=1.13.2",
     "fastapi>=0.135.2",
     "langchain>=1.2.13",
     "langchain-community>=0.4.1",
     "langchain-groq>=1.1.2",
     "langchain-huggingface>=1.2.1",
-    "langchain-openai>=1.1.12",
-    "openai>=2.29.0",
+    "langchain-text-splitters>=0.3.0",
     "pypdf>=6.9.2",
     "python-dotenv>=1.2.2",
     "python-multipart>=0.0.22",
