@@ -1,9 +1,11 @@
+import json
 import logging
 import os
 from typing import List
 
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores import FAISS
+from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
@@ -22,9 +24,13 @@ from app.config import (
 
 logger = logging.getLogger(__name__)
 
+_CORPUS_PATH = os.path.join(FAISS_INDEX_DIR, "corpus.json")
+
 # Cached singleton — avoids reloading the 80 MB model on every upload
 _embedding_model: HuggingFaceEmbeddings | None = None
 
+
+# ── Model helpers ─────────────────────────────────────────────────────────────
 
 def get_embedding_model() -> HuggingFaceEmbeddings:
     global _embedding_model
@@ -85,16 +91,40 @@ Answer:
     )
 
 
-def _build_retriever(vdb):
-    return vdb.as_retriever(
-        search_type="mmr",
-        search_kwargs={"k": 4, "fetch_k": 10, "lambda_mult": 0.7},
-    )
+# ── Corpus persistence (for BM25 survival across restarts) ────────────────────
 
+def save_corpus(chunks: List[Document]) -> None:
+    """Serialise chunk text + metadata to JSON so BM25 can be rebuilt after restart."""
+    try:
+        data = [{"content": c.page_content, "metadata": c.metadata} for c in chunks]
+        with open(_CORPUS_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+        logger.info(f"Corpus saved: {len(chunks)} chunks → {_CORPUS_PATH}")
+    except Exception as e:
+        logger.warning(f"Failed to save corpus: {e}")
+
+
+def load_corpus() -> List[Document]:
+    """Load persisted chunk corpus for BM25 indexing on startup."""
+    if not os.path.exists(_CORPUS_PATH):
+        return []
+    try:
+        with open(_CORPUS_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+        chunks = [Document(page_content=d["content"], metadata=d["metadata"]) for d in data]
+        logger.info(f"Corpus loaded: {len(chunks)} chunks from {_CORPUS_PATH}")
+        return chunks
+    except Exception as e:
+        logger.warning(f"Failed to load corpus: {e}")
+        return []
+
+
+# ── Document processing ───────────────────────────────────────────────────────
 
 def process_documents(file_paths: List[str]) -> bool:
-    all_new_docs = []
+    from app.rag.retriever import HybridRetriever
 
+    all_new_docs = []
     for file_path in file_paths:
         if not os.path.exists(file_path):
             logger.warning(f"File not found: {file_path}")
@@ -123,20 +153,25 @@ def process_documents(file_paths: List[str]) -> bool:
     new_chunks = splitter.split_documents(all_new_docs)
     logger.info(f"Created {len(new_chunks)} chunks")
 
+    # ── FAISS (dense index) ──
     embedding_model = get_embedding_model()
-
     if state.vector_db is None:
         state.vector_db = FAISS.from_documents(new_chunks, embedding_model)
-        logger.info("Created new vector store")
+        logger.info("Created new FAISS vector store")
     else:
         state.vector_db.add_documents(new_chunks)
-        logger.info(f"Added {len(new_chunks)} chunks to existing vector store")
-
+        logger.info(f"Added {len(new_chunks)} chunks to existing FAISS store")
     state.vector_db.save_local(FAISS_INDEX_DIR)
-    state.retriever = _build_retriever(state.vector_db)
 
+    # ── BM25 corpus (sparse index) ──
+    state.corpus_chunks.extend(new_chunks)
+    save_corpus(state.corpus_chunks)
+
+    # ── Wire retriever + QA chain ──
     if state.llm is None:
         state.llm = initialize_llm()
+
+    state.retriever = HybridRetriever()
     state.qa_chain = create_qa_chain(state.retriever, state.llm) if state.llm else None
 
     state.current_documents.extend(all_new_docs)
