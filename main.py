@@ -11,8 +11,10 @@ from app.rag.pipeline import (
     create_qa_chain,
     get_embedding_model,
     initialize_llm,
+    load_corpus,
     process_documents,
 )
+from app.rag.retriever import HybridRetriever
 import app.state as state
 from app.api.chat import router as chat_router
 from app.api.quiz import router as quiz_router
@@ -40,11 +42,11 @@ async def lifespan(app: FastAPI):
             )
             logger.info(f"Loaded FAISS index — {state.vector_db.index.ntotal} vectors")
 
-            state.retriever = state.vector_db.as_retriever(
-                search_type="mmr",
-                search_kwargs={"k": 4, "fetch_k": 10, "lambda_mult": 0.7},
-            )
+            # Restore BM25 corpus from disk so hybrid search works after restart
+            state.corpus_chunks = load_corpus()
+
             state.llm = initialize_llm()
+            state.retriever = HybridRetriever()
             if state.llm:
                 state.qa_chain = create_qa_chain(state.retriever, state.llm)
         except Exception as e:
@@ -62,7 +64,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Personal Study Coach API",
-    description="RAG-based study assistant for PDF documents",
+    description="RAG-based study assistant — hybrid retrieval + cross-encoder reranking",
     version="2.0.0",
     lifespan=lifespan,
 )
@@ -76,7 +78,9 @@ class HealthResponse(BaseModel):
     status: str
     documents_loaded: int
     chunks_count: int
+    corpus_chunks: int
     api_key_valid: bool
+    retrieval_mode: str
     timestamp: str
 
 
@@ -87,7 +91,9 @@ async def health_check():
         status="healthy" if state.vector_db and state.llm else "degraded",
         documents_loaded=len(state.current_documents),
         chunks_count=chunks_count,
+        corpus_chunks=len(state.corpus_chunks),
         api_key_valid=state.llm is not None,
+        retrieval_mode="hybrid_rerank" if state.corpus_chunks else "vector_only",
         timestamp=datetime.now().isoformat(),
     )
 

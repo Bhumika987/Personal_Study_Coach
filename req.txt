@@ -10,3 +10,5 @@ pypdf
 python-dotenv
 python-multipart
 sentence-transformers
+rank-bm25
+numpy

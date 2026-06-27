@@ -7,6 +7,10 @@ llm: Any = None
 qa_chain: Any = None
 current_documents: List = []
 
+# All document chunks in insertion order — used to build BM25 index at search time
+# Persisted to faiss_index/corpus.json so BM25 survives server restarts
+corpus_chunks: List = []
+
 # Per-session conversation history  {session_id: [{"role": ..., "content": ...}]}
 session_histories: Dict[str, List[Dict]] = {}
 
