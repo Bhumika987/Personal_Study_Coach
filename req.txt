@@ -12,3 +12,8 @@ python-multipart
 sentence-transformers
 rank-bm25
 numpy
+ragas>=0.2
+datasets
+streamlit>=1.35
+requests
+pandas

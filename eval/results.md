@@ -1,97 +1,79 @@
-# Evaluation Results - Study Coach
+# Evaluation Results — Personal Study Coach
 
-## Overview
-- **Date:** 2026-03-26 11:12
-- **Model:** Mixtral-8x7b-32768
-- **Embeddings:** all-MiniLM-L6-v2
-- **Vector DB:** FAISS
-- **Chunks:** 297
-- **Documents:** 166 pages
-- **Retriever:** MMR (k=4, lambda_mult=0.7)
+## System Configuration
+
+| Component | Value |
+|-----------|-------|
+| LLM | llama-3.1-8b-instant (Groq) |
+| Embedding model | sentence-transformers/all-MiniLM-L6-v2 (384-dim) |
+| Vector store | FAISS (MMR, fetch_k=20, k=10) |
+| BM25 | BM25Okapi via rank-bm25 |
+| Retrieval strategy | Hybrid BM25 + FAISS → RRF → cross-encoder rerank |
+| Reranker | cross-encoder/ms-marco-MiniLM-L-6-v2 |
+| Chunk size | 1000 chars / 200 overlap |
+| Final chunks to LLM | 4 |
+| Evaluator | RAGAS 0.4.x |
+
+---
+
+## RAGAS Scores
+
+> Run `uv run python eval/run_eval.py` to generate real scores.
+> Full per-question results are saved to `eval/ragas_scores.json`.
+
+| Metric | Score | What it measures |
+|--------|-------|-----------------|
+| **Faithfulness** | — | Every claim in the answer is supported by retrieved context |
+| **Answer Relevancy** | — | The answer directly addresses the question asked |
+| **Context Precision** | — | Retrieved chunks are relevant to the question |
+| **Context Recall** | — | Retrieved context contains all info needed to answer |
+
+---
 
 ## Test Questions (10)
 
-| # | Question | Answer Preview | Sources | Correct? | Comments |
-|---|----------|----------------|---------|----------|----------|
-| 1 | What is the attention mechanism in neural networks? | The attention mechanism in neural networks is described as mapping a query and a set of key-value pa... | 4 | To be evaluated | Manual review needed |
-| 2 | How does self-attention work? | Self-attention works by mapping a query and a set of key-value pairs to an output, where the query, ... | 4 | To be evaluated | Manual review needed |
-| 3 | What are the advantages of attention over RNNs? | Self-attention layers have two advantages over RNNs:   1. Lower total computational complexity per l... | 4 | To be evaluated | Manual review needed |
-| 4 | What is Python and what are its key features? | Python is a widely used general-purpose, high-level programming language. It was initially designed ... | 4 | To be evaluated | Manual review needed |
-| 5 | How to define a function in Python? | To define a function in Python, follow these steps:  1. Use the keyword "def" to indicate the start ... | 4 | To be evaluated | Manual review needed |
-| 6 | What are sequence models used for? | Sequence models are used for general sequence learning, transduction, and mapping sequences to seque... | 4 | To be evaluated | Manual review needed |
-| 7 | Explain the concept of positional encoding | The concept of positional encoding is used to prevent leftward tokens in the sequence. It is added t... | 4 | To be evaluated | Manual review needed |
-| 8 | What is the difference between RNNs and Transformers? | The main difference between RNNs and Transformers is how they handle sequential computation.   RNNs ... | 4 | To be evaluated | Manual review needed |
-| 9 | How does multi-head attention work? | Multi-head attention works by jointly attending to information from different representation subspac... | 4 | To be evaluated | Manual review needed |
-| 10 | What are the main applications of Python in AI? | I don't have enough information to answer this.... | 4 | To be evaluated | Manual review needed |
+| # | Question | Source document |
+|---|----------|----------------|
+| 1 | What is the attention mechanism in neural networks? | attention1.pdf |
+| 2 | How does self-attention work in the Transformer? | attention1.pdf |
+| 3 | What are the advantages of self-attention over recurrent layers? | attention1.pdf |
+| 4 | What is multi-head attention and why is it used? | attention1.pdf |
+| 5 | What is positional encoding and why does the Transformer need it? | attention1.pdf |
+| 6 | What is the difference between encoder and decoder in the Transformer? | attention1.pdf |
+| 7 | What are sequence-to-sequence models used for? | sequence1.pdf |
+| 8 | How do you define a function in Python? | PYTHON1.pdf |
+| 9 | What are Python lists and how do you create one? | PYTHON1.pdf |
+| 10 | What are large language models and how are they trained? | ll1.pdf |
 
+---
 
-## System Analysis
+## Retrieval Pipeline — Why Each Stage Exists
 
-### Where does your system fail?
+| Stage | Problem it solves |
+|-------|------------------|
+| **Query rewriting** | Vocabulary mismatch — user phrasing ≠ document phrasing |
+| **BM25** | Exact keyword hits that dense embeddings compress away |
+| **FAISS MMR** | Semantic similarity + diversity across retrieved chunks |
+| **RRF fusion** | Merges two incompatible score scales using rank positions only |
+| **Cross-encoder rerank** | High-precision relevance scoring on the small fused candidate set |
 
-**Identified Limitations:**
+---
 
-1. **Retrieval Accuracy**: MMR retrieval sometimes pulls irrelevant chunks when questions are ambiguous
-2. **Citation Consistency**: Sources aren't always correctly attributed in answers
-3. **Complex Reasoning**: Multi-hop questions requiring synthesis across documents sometimes produce incomplete answers
-4. **Quiz Generation**: Questions can sometimes be too simple or too specific
-5. **No Context Memory**: Without conversation memory, follow-up questions lose context
+## Known Limitations
 
-### Why does it fail?
+1. **Single-hop retrieval only** — questions requiring synthesis across 3+ chunks may produce incomplete answers
+2. **BM25 rebuilt per query** — acceptable for ≤500 chunks; should be cached for larger corpora
+3. **Session state is in-memory** — lost on server restart (Phase 5 will add SQLite persistence)
+4. **No streaming** — LLM response is fully buffered before returning
 
-**Root Causes:**
+---
 
-1. **Chunk Size**: 1000-character chunks may split important concept connections
-2. **Embedding Model**: 384-dimensional embeddings may not capture complex semantic relationships
-3. **Retrieval K-value**: Only retrieving 4 chunks may miss relevant information
-4. **No Reranking**: Retrieved chunks are used directly without relevance scoring
-5. **Temperature Setting**: 0.3 temperature may be too low for creative explanations
+## How to Run Evaluation
 
-### How can you improve it?
+```bash
+# Make sure the FAISS index exists first (start server once):
+uv run uvicorn main:app
 
-**Proposed Improvements:**
-
-1. **Increase Chunk Size**: Use 1500-2000 characters for better context
-2. **Hybrid Search**: Combine semantic search with keyword (BM25) retrieval
-3. **Add Reranking**: Implement cross-encoder for better relevance
-4. **Query Expansion**: Expand questions with synonyms before retrieval
-5. **Confidence Scoring**: Add confidence scores to answers
-6. **Better Evaluation**: Create ground truth dataset for automatic evaluation
-7. **Conversation Memory**: Add simple memory for follow-up questions
-8. **Ensemble Methods**: Use multiple retrievers and combine results
-
-## Performance Metrics
-
-| Metric | Value |
-|--------|-------|
-| Total Chunks | 297 |
-| Embedding Dimension | 384 |
-| Retrieval k | 4 |
-| Chunk Size | 1000 chars |
-| Overlap | 200 chars |
-| Avg Response Time | ~2-3 seconds |
-| Success Rate | 10/10 |
-
-## Sample Answers
-
-
-### Q1: What is the attention mechanism in neural networks?
-**Answer:** The attention mechanism in neural networks is described as mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum. 
-
-(Source: [filename], Page [page])
-**Sources:** 4 chunks
-
-### Q2: How does self-attention work?
-**Answer:** Self-attention works by mapping a query and a set of key-value pairs to an output, where the query, keys, values, and output are all vectors. The output is computed as a weighted sum, with the weights determined by the similarity between the query and key vectors. 
-
-In the context of the Transformer, self-attention layers allow each position to attend to all positions in the previous layer of the encoder or the decoder. This is done by using the output of the previous layer as both the keys, val
-**Sources:** 4 chunks
-
-### Q3: What are the advantages of attention over RNNs?
-**Answer:** Self-attention layers have two advantages over RNNs: 
-
-1. Lower total computational complexity per layer, making them faster than recurrent layers.
-2. More computation can be parallelized, as measured by the minimum number of sequential operations required.
-
-(Source: No specific page number mentioned, as the context does not provide page numbers.)
-**Sources:** 4 chunks
+# Then run evaluation (takes ~3–5 minutes for 10 questions × 4 metrics):
+uv run python eval/run_eval.py
+```
