@@ -1,0 +1,36 @@
+services:
+
+  api:
+    build: .
+    ports:
+      - "10000:10000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    volumes:
+      # Persist FAISS index across container restarts
+      - faiss_data:/app/faiss_index
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:10000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  frontend:
+    build: .
+    command: >
+      uv run streamlit run streamlit_app.py
+      --server.port 8501
+      --server.address 0.0.0.0
+      --server.headless true
+    ports:
+      - "8501:8501"
+    environment:
+      # Point Streamlit at the API container by service name
+      - API_BASE_URL=http://api:10000
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  faiss_data:

@@ -97,3 +97,7 @@ def answer_quiz(user_answer: str, session_id: str) -> dict:
 
 def get_quiz_history(session_id: str) -> dict:
     return _get("/quiz/history", params={"session_id": session_id})
+
+
+def create_study_plan(goal: str, session_id: str) -> dict:
+    return _post("/agent/study-plan", json={"goal": goal, "session_id": session_id})

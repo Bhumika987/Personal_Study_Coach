@@ -16,6 +16,7 @@ from app.rag.pipeline import (
 )
 from app.rag.retriever import HybridRetriever
 import app.state as state
+from app.api.agent import router as agent_router
 from app.api.chat import router as chat_router
 from app.api.quiz import router as quiz_router
 from app.api.upload import router as upload_router
@@ -72,6 +73,7 @@ app = FastAPI(
 app.include_router(upload_router)
 app.include_router(chat_router)
 app.include_router(quiz_router)
+app.include_router(agent_router)
 
 
 class HealthResponse(BaseModel):
