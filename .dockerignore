@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+faiss_index/
+temp_uploads/
+.env
+*.ipynb
+tests/
+eval/ragas_scores.json
+app_legacy.py

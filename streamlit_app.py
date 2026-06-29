@@ -11,7 +11,7 @@ import uuid
 
 import streamlit as st
 
-from frontend import chat_tab, metrics_tab, quiz_tab
+from frontend import agent_tab, chat_tab, metrics_tab, quiz_tab
 from frontend.api_client import APIError, get_documents, health, upload_pdf
 
 # ── Page config ───────────────────────────────────────────────────────────────
@@ -29,6 +29,7 @@ defaults = {
     "quiz":          lambda: None,
     "quiz_result":   lambda: None,
     "upload_status": lambda: None,   # ("ok"|"err", message)
+    "study_plan":    lambda: None,   # agent result dict
 }
 for key, factory in defaults.items():
     if key not in st.session_state:
@@ -111,13 +112,18 @@ with st.sidebar:
         st.rerun()
 
 # ── Main tabs ─────────────────────────────────────────────────────────────────
-tab_chat, tab_quiz, tab_metrics = st.tabs(["💬 Chat", "📝 Quiz", "📊 Metrics"])
+tab_chat, tab_quiz, tab_agent, tab_metrics = st.tabs(
+    ["💬 Chat", "📝 Quiz", "🤖 Study Planner", "📊 Metrics"]
+)
 
 with tab_chat:
     chat_tab.render()
 
 with tab_quiz:
     quiz_tab.render()
+
+with tab_agent:
+    agent_tab.render()
 
 with tab_metrics:
     metrics_tab.render()
