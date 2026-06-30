@@ -21,7 +21,7 @@ FINAL_TOP_K = 4           # chunks passed to the LLM after reranking
 RRF_K = 60                # constant in Reciprocal Rank Fusion formula
 RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
-DEFAULT_DOCS = ["data/attention1.pdf", "data/sequence1.pdf", "data/PYTHON1.pdf"]
+DEFAULT_DOCS = ["data/attention1.pdf", "data/sequence1.pdf", "data/PYTHON1.pdf", "data/ll1.pdf"]
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(FAISS_INDEX_DIR, exist_ok=True)

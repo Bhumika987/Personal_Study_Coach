@@ -78,3 +78,28 @@ async def list_documents():
         set(doc.metadata.get("source", "Unknown") for doc in state.current_documents)
     )
     return JSONResponse(content={"documents": doc_names, "count": len(doc_names)})
+
+
+@router.delete("/index")
+async def clear_index():
+    """Wipe the in-memory state and all persisted index files so the user can
+    start fresh with a new set of documents."""
+    import shutil
+
+    state.vector_db = None
+    state.retriever = None
+    state.qa_chain = None
+    state.corpus_chunks = []
+    state.current_documents = []
+    state.session_histories = {}
+    state.quiz_store = {}
+    state.quiz_history_store = {}
+
+    # Remove persisted FAISS + corpus files
+    from app.config import FAISS_INDEX_DIR
+    if os.path.exists(FAISS_INDEX_DIR):
+        shutil.rmtree(FAISS_INDEX_DIR)
+        os.makedirs(FAISS_INDEX_DIR, exist_ok=True)
+
+    logger.info("Index cleared by user request")
+    return JSONResponse(content={"message": "Index cleared. Upload new PDFs to start fresh."})

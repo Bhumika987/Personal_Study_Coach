@@ -1,7 +1,7 @@
 # Python-generated files
 __pycache__/
 faiss_index/
-team_uploads/
+temp_uploads/
 *.py[oc]
 build/
 dist/

@@ -50,7 +50,7 @@ def build_graph(llm: Any):
     return create_react_agent(
         model=llm,
         tools=STUDY_TOOLS,
-        state_modifier=SystemMessage(content=SYSTEM_PROMPT),
+        prompt=SystemMessage(content=SYSTEM_PROMPT),
     )
 
 

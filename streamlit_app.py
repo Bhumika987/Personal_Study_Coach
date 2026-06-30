@@ -12,7 +12,7 @@ import uuid
 import streamlit as st
 
 from frontend import agent_tab, chat_tab, metrics_tab, quiz_tab
-from frontend.api_client import APIError, get_documents, health, upload_pdf
+from frontend.api_client import APIError, clear_index, get_documents, health, upload_pdf
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -57,20 +57,28 @@ with st.sidebar:
 
     # -- File upload
     st.subheader("Upload Study Material")
-    uploaded_file = st.file_uploader(
-        "Choose a PDF file",
+    uploaded_files = st.file_uploader(
+        "Choose PDF files",
         type=["pdf"],
+        accept_multiple_files=True,
         label_visibility="collapsed",
     )
 
-    if uploaded_file is not None:
-        if st.button("Process PDF", type="primary", use_container_width=True):
-            with st.spinner(f"Processing {uploaded_file.name}…"):
-                try:
-                    result = upload_pdf(uploaded_file.read(), uploaded_file.name)
-                    st.session_state.upload_status = ("ok", result.get("message", "Upload successful"))
-                except APIError as e:
-                    st.session_state.upload_status = ("err", e.detail)
+    if uploaded_files:
+        if st.button("Process PDFs", type="primary", use_container_width=True):
+            results = []
+            errors = []
+            for f in uploaded_files:
+                with st.spinner(f"Processing {f.name}…"):
+                    try:
+                        res = upload_pdf(f.read(), f.name)
+                        results.append(res.get("message", f.name))
+                    except APIError as e:
+                        errors.append(f"{f.name}: {e.detail}")
+            if errors:
+                st.session_state.upload_status = ("err", "\n".join(errors))
+            else:
+                st.session_state.upload_status = ("ok", f"Processed {len(results)} file(s)")
             st.rerun()
 
     # Show last upload result
@@ -96,17 +104,27 @@ with st.sidebar:
     except APIError:
         st.caption("Could not load document list.")
 
+    # Clear index — lets user start fresh with a different set of PDFs
+    if st.button("🗑 Clear Index", use_container_width=True, help="Wipes all indexed documents so you can start fresh"):
+        try:
+            clear_index()
+            st.session_state.upload_status = None
+            st.session_state.messages = []
+            st.success("Index cleared. Upload new PDFs to continue.", icon="🗑")
+            st.rerun()
+        except APIError as e:
+            st.error(e.detail)
+
     st.divider()
 
     # -- Session controls
     st.caption(f"Session: `{st.session_state.session_id}`")
     if st.button("Clear Conversation", use_container_width=True):
-        # We clear locally — server conversation also gets cleared via API
         try:
             from frontend.api_client import clear_conversation
             clear_conversation(st.session_state.session_id)
         except APIError:
-            pass  # if server is down, still clear the local display
+            pass
         st.session_state.messages = []
         st.session_state.upload_status = None
         st.rerun()

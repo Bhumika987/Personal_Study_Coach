@@ -58,8 +58,12 @@ def render() -> None:
     st.subheader("RAGAS Evaluation Scores")
 
     if RAGAS_PATH.exists():
-        with open(RAGAS_PATH, encoding="utf-8") as f:
-            data = json.load(f)
+        try:
+            with open(RAGAS_PATH, encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            st.warning(f"Could not read ragas_scores.json: {e}")
+            data = {}
 
         scores = data.get("scores", {})
         ts = data.get("timestamp", "")[:19]
