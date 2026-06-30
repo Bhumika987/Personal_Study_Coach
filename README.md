@@ -1,3 +1,13 @@
+---
+title: Personal Study Coach
+emoji: 📘
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Personal Study Coach
 
 A production-grade RAG application that turns any PDF into an interactive study session.
