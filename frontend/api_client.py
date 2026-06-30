@@ -101,3 +101,7 @@ def get_quiz_history(session_id: str) -> dict:
 
 def create_study_plan(goal: str, session_id: str) -> dict:
     return _post("/agent/study-plan", json={"goal": goal, "session_id": session_id})
+
+
+def clear_index() -> dict:
+    return _delete("/index")

@@ -110,30 +110,33 @@ def build_ragas_dataset(rows: list[dict]):
 
 
 def run_ragas(dataset) -> dict:
-    """Run all four RAGAS metrics using our Groq LLM + local embeddings."""
-    from ragas import evaluate
-    from ragas.metrics.collections import (
-        Faithfulness,
-        AnswerRelevancy,
-        ContextPrecision,
-        ContextRecall,
-    )
-    from ragas.llms import LangchainLLMWrapper
-    from ragas.embeddings import LangchainEmbeddingsWrapper
+    """Run all four RAGAS metrics using our Groq LLM + local embeddings.
 
-    llm_wrapper = LangchainLLMWrapper(state.llm)
-    emb_wrapper = LangchainEmbeddingsWrapper(get_embedding_model())
+    RAGAS 0.4 'collections' metrics require InstructorLLM (not LangchainLLMWrapper).
+    We build one via llm_factory pointed at Groq's OpenAI-compatible endpoint.
+    Embeddings use RAGAS's native HuggingFaceEmbeddings so no wrapper is needed.
+    """
+    from openai import OpenAI
+    from ragas import evaluate
+    from ragas.llms import llm_factory
+    from ragas.embeddings import HuggingFaceEmbeddings
+    from ragas.metrics import Faithfulness, AnswerRelevancy, ContextPrecision, ContextRecall
+
+    groq_client = OpenAI(
+        api_key=GROQ_API_KEY,
+        base_url="https://api.groq.com/openai/v1",
+    )
+    ragas_llm = llm_factory("llama-3.1-8b-instant", provider="openai", client=groq_client)
+    ragas_emb = HuggingFaceEmbeddings(model="sentence-transformers/all-MiniLM-L6-v2")
 
     result = evaluate(
         dataset=dataset,
         metrics=[
-            Faithfulness(),
-            AnswerRelevancy(),
-            ContextPrecision(),
-            ContextRecall(),
+            Faithfulness(llm=ragas_llm),
+            AnswerRelevancy(llm=ragas_llm, embeddings=ragas_emb),
+            ContextPrecision(llm=ragas_llm),
+            ContextRecall(llm=ragas_llm),
         ],
-        llm=llm_wrapper,
-        embeddings=emb_wrapper,
     )
     return dict(result)
 
