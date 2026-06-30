@@ -23,14 +23,10 @@ def render() -> None:
     )
 
     # ── Goal input ────────────────────────────────────────────────────────────
-    goal = st.text_area(
+    goal = st.text_input(
         "What do you want to study today?",
         key="agent_goal",
-        placeholder=(
-            "e.g. Help me understand the attention mechanism and multi-head attention,\n"
-            "      including how positional encoding works."
-        ),
-        height=110,
+        placeholder="e.g. Help me understand the attention mechanism and multi-head attention",
     )
 
     col_run, col_clear = st.columns([3, 1])

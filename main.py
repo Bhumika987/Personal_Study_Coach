@@ -53,12 +53,8 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Failed to load FAISS index: {e}")
     else:
-        existing = [d for d in DEFAULT_DOCS if os.path.exists(d)]
-        if existing:
-            logger.info(f"Loading default documents: {existing}")
-            process_documents(existing)
-        else:
-            logger.warning("No default documents found. Upload a PDF to get started.")
+        logger.info("No FAISS index found. Upload a PDF to get started.")
+        state.llm = initialize_llm()
 
     yield  # Server runs here
 
@@ -90,7 +86,7 @@ class HealthResponse(BaseModel):
 async def health_check():
     chunks_count = state.vector_db.index.ntotal if state.vector_db else 0
     return HealthResponse(
-        status="healthy" if state.vector_db and state.llm else "degraded",
+        status="healthy" if state.llm else "degraded",
         documents_loaded=len(state.current_documents),
         chunks_count=chunks_count,
         corpus_chunks=len(state.corpus_chunks),
