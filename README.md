@@ -1,3 +1,4 @@
+Live Link: https://huggingface.co/spaces/Bhumi987/Personal-Study-Coach
 ---
 title: Personal Study Coach
 emoji: 📘
